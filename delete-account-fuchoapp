@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eliminar mi cuenta - Fucho App</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; line-height: 1.5; }
+        button { background-color: #dc2626; color: white; font-weight: bold; padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+        button:hover { background-color: #b91c1c; }
+        button:disabled { background-color: #9ca3af; cursor: not-allowed; }
+        .error { color: #dc2626; margin-top: 1rem; padding: 10px; background-color: #fee2e2; border-radius: 8px; }
+        .success { color: #16a34a; margin-top: 1rem; padding: 10px; background-color: #dcfce7; border-radius: 8px; }
+        input { display: block; width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ccc; border-radius: 4px; font-size: 1rem; }
+        label { font-weight: bold; margin-top: 10px; display: block; }
+        .info { background-color: #e0f2fe; padding: 10px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #0284c7; }
+    </style>
+</head>
+<body>
+    <h1>Eliminar cuenta de Fucho App</h1>
+    
+    <div class="info">
+        <strong>⚠️ Atención:</strong> Esta acción eliminará permanentemente tu cuenta y todos tus datos. 
+        Se enviará un enlace de verificación a tu correo electrónico para confirmar la eliminación.
+    </div>
+    
+    <label for="email">Correo electrónico registrado:</label>
+    <input type="email" id="email" placeholder="tu@email.com" required>
+    
+    <button id="deleteButton">Solicitar eliminación de cuenta</button>
+    <div id="message"></div>
+
+    <script>
+        // Las claves NO están aquí - se usa la función de Supabase
+        const deleteFunctionUrl = 'https://fjvpurvsrfliireibnrt.supabase.co/functions/v1/delete-user';
+        
+        document.getElementById('deleteButton').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const messageDiv = document.getElementById('message');
+            const button = document.getElementById('deleteButton');
+            
+            messageDiv.innerHTML = '';
+            
+            if (!email) {
+                messageDiv.innerHTML = '<div class="error">Por favor, introduce tu correo electrónico.</div>';
+                return;
+            }
+            
+            // Validar formato de email básico
+            if (!email.includes('@') || !email.includes('.')) {
+                messageDiv.innerHTML = '<div class="error">Por favor, introduce un correo electrónico válido.</div>';
+                return;
+            }
+            
+            button.disabled = true;
+            button.textContent = 'Procesando solicitud...';
+            messageDiv.innerHTML = '<div class="info">Verificando y eliminando cuenta...</div>';
+            
+            try {
+                const response = await fetch(deleteFunctionUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                
+                const data = await response.json();
+                
+                if (response.status === 200) {
+                    messageDiv.innerHTML = `
+                        <div class="success">
+                            ✅ ${data.message || '¡Cuenta eliminada exitosamente!'}<br><br>
+                            Gracias por haber usado Fucho App.
+                        </div>
+                    `;
+                    document.getElementById('email').disabled = true;
+                } else {
+                    messageDiv.innerHTML = `<div class="error">❌ Error: ${data.error || 'No se pudo eliminar la cuenta. Verifica tu correo o contacta a soporte.'}</div>`;
+                    button.disabled = false;
+                    button.textContent = 'Solicitar eliminación de cuenta';
+                }
+            } catch (error) {
+                console.error(error);
+                messageDiv.innerHTML = `<div class="error">❌ Error de conexión: ${error.message}. Por favor, inténtalo más tarde.</div>`;
+                button.disabled = false;
+                button.textContent = 'Solicitar eliminación de cuenta';
+            }
+        });
+    </script>
+</body>
+</html>
